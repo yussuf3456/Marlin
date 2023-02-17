@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 #pragma once
@@ -37,7 +37,7 @@ public:
   static void Ready();
   static void Loop();
 
-  static void PrinterKilled(FSTR_P const error, FSTR_P const component);
+  static void PrinterKilled(PGM_P error, PGM_P component);
   static void UserConfirmRequired(const char * const msg);
   static void SettingsReset();
   static void StoreSettings(char *buff);
@@ -72,10 +72,10 @@ public:
   static void SetMessageLine(const char* msg, uint8_t line);
   static void SetMessageLinePGM(PGM_P msg, uint8_t line);
 
-  static void SetStatusMessage(const char* msg, const millis_t duration=DGUS_STATUS_EXPIRATION_MS);
-  static void SetStatusMessage(FSTR_P const msg, const millis_t duration=DGUS_STATUS_EXPIRATION_MS);
+  static void SetStatusMessage(const char* msg, const millis_t duration = DGUS_STATUS_EXPIRATION_MS);
+  static void SetStatusMessagePGM(PGM_P msg, const millis_t duration = DGUS_STATUS_EXPIRATION_MS);
 
-  static void ShowWaitScreen(DGUS_Screen return_screen, bool has_continue=false);
+  static void ShowWaitScreen(DGUS_Screen return_screen, bool has_continue = false);
 
   static DGUS_Screen GetCurrentScreen();
   static void TriggerScreenChange(DGUS_Screen screen);
@@ -115,7 +115,7 @@ private:
   static const DGUS_Addr* FindScreenAddrList(DGUS_Screen screen);
   static bool CallScreenSetup(DGUS_Screen screen);
 
-  static void MoveToScreen(DGUS_Screen screen, bool abort_wait=false);
+  static void MoveToScreen(DGUS_Screen screen, bool abort_wait = false);
   static bool SendScreenVPData(DGUS_Screen screen, bool complete_update);
 
   static bool settings_ready;
@@ -134,7 +134,7 @@ private:
     bool initialized;
     uint8_t volume;
     uint8_t brightness;
-    bool abl_okay;
+    bool abl;
   } eeprom_data_t;
 };
 

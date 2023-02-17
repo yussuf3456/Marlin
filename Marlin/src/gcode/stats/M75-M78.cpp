@@ -29,8 +29,8 @@
 
 #include "../../MarlinCore.h" // for startOrResumeJob
 
-#if ENABLED(DWIN_LCD_PROUI)
-  #include "../../lcd/e3v2/proui/dwin.h"
+#if ENABLED(DWIN_CREALITY_LCD_ENHANCED)
+  #include "../../lcd/e3v2/enhanced/dwin.h"
 #endif
 
 /**
@@ -38,8 +38,9 @@
  */
 void GcodeSuite::M75() {
   startOrResumeJob();
-  #if ENABLED(DWIN_LCD_PROUI)
-    if (!IS_SD_PRINTING()) DWIN_Print_Header(parser.string_arg && parser.string_arg[0] ? parser.string_arg : GET_TEXT(MSG_HOST_START_PRINT));
+  #if ENABLED(DWIN_CREALITY_LCD_ENHANCED)
+    DWIN_Print_Header(parser.string_arg && parser.string_arg[0] ? parser.string_arg : GET_TEXT(MSG_HOST_START_PRINT));
+    DWIN_Print_Started(false);
   #endif
 }
 
@@ -47,8 +48,8 @@ void GcodeSuite::M75() {
  * M76: Pause print timer
  */
 void GcodeSuite::M76() {
-  TERN(DWIN_LCD_PROUI, ui.pause_print(), print_job_timer.pause());
-  TERN_(HOST_PAUSE_M76, hostui.pause());
+  print_job_timer.pause();
+  TERN_(HOST_PAUSE_M76, host_action_pause());
 }
 
 /**
@@ -56,6 +57,7 @@ void GcodeSuite::M76() {
  */
 void GcodeSuite::M77() {
   print_job_timer.stop();
+  TERN_(DWIN_CREALITY_LCD_ENHANCED, DWIN_Print_Finished());
 }
 
 #if ENABLED(PRINTCOUNTER)

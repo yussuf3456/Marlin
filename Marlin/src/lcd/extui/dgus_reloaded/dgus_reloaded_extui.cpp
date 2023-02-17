@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -26,7 +26,7 @@
 
 #include "../../../inc/MarlinConfigPre.h"
 
-#if DGUS_LCD_UI_RELOADED
+#if ENABLED(DGUS_LCD_UI_RELOADED)
 
 #include "../ui_api.h"
 #include "DGUSScreenHandler.h"
@@ -46,7 +46,7 @@ namespace ExtUI {
     }
   }
 
-  void onPrinterKilled(FSTR_P const error, FSTR_P const component) {
+  void onPrinterKilled(PGM_P error, PGM_P component) {
     dgus_screen_handler.PrinterKilled(error, component);
   }
 
@@ -83,8 +83,8 @@ namespace ExtUI {
   }
 
   void onHomingStart() {}
-  void onHomingDone() {}
-  void onPrintDone() {}
+  void onHomingComplete() {}
+  void onPrintFinished() {}
 
   void onFactoryReset() {
     dgus_screen_handler.SettingsReset();
@@ -100,17 +100,16 @@ namespace ExtUI {
 
   void onPostprocessSettings() {}
 
-  void onSettingsStored(bool success) {
+  void onConfigurationStoreWritten(bool success) {
     dgus_screen_handler.ConfigurationStoreWritten(success);
   }
 
-  void onSettingsLoaded(bool success) {
+  void onConfigurationStoreRead(bool success) {
     dgus_screen_handler.ConfigurationStoreRead(success);
   }
 
   #if HAS_MESH
-    void onLevelingStart() {}
-    void onLevelingDone() {}
+    void onMeshLevelingStart() {}
 
     void onMeshUpdate(const int8_t xpos, const int8_t ypos, const_float_t zval) {
       dgus_screen_handler.MeshUpdate(xpos, ypos);

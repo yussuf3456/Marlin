@@ -29,7 +29,7 @@
 #if NOT_TARGET(STM32F1, STM32F1xx)
   #error "Oops! Select an STM32F1 board in 'Tools > Board.'"
 #elif HOTENDS > 2 || E_STEPPERS > 2
-  #error "MKS Robin supports up to 2 hotends / E steppers."
+  #error "MKS Robin supports up to 2 hotends / E-steppers. Comment out this line to continue."
 #endif
 
 #define BOARD_INFO_NAME "MKS Robin"
@@ -53,7 +53,7 @@
 #endif
 
 #if ENABLED(FLASH_EEPROM_EMULATION)
-  #define EEPROM_PAGE_SIZE     (0x800U) // 2K
+  #define EEPROM_PAGE_SIZE     (0x800U) // 2KB
   #define EEPROM_START_ADDRESS (0x8000000UL + (STM32_FLASH_SIZE) * 1024UL - (EEPROM_PAGE_SIZE) * 2UL)
   #define MARLIN_EEPROM_SIZE (EEPROM_PAGE_SIZE)
 #endif
@@ -125,7 +125,7 @@
 //#define TEMP_0_CS_PIN                     PE6   // TC2 - CS2
 
 //
-// Filament Runout Sensor
+// Filament runout sensor
 //
 #define FIL_RUNOUT_PIN                      PF11  // MT_DET
 
@@ -187,6 +187,8 @@
   #define TFT_BUFFER_SIZE                  14400
 #endif
 
+// #define USE_DMA_FSMC_TC_INT
+
 #if NEED_TOUCH_PINS
   #define TOUCH_CS_PIN                      PB1   // SPI2_NSS
   #define TOUCH_SCK_PIN                     PB13  // SPI2_SCK
@@ -200,7 +202,7 @@
 #define SPI_DEVICE                             2
 
 #define SDIO_SUPPORT
-#define SDIO_CLOCK                       4500000
+#define SDIO_CLOCK                          4500000 // 4500000    // 4.5MHz
 #define SDIO_READ_RETRIES                     16
 #if ENABLED(SDIO_SUPPORT)
   #define SD_SCK_PIN                        PB13  // SPI2
@@ -272,8 +274,8 @@
 //
 // W25Q64 64Mb (8MB) SPI flash
 //
-#define SPI_FLASH
-#if ENABLED(SPI_FLASH)
+#define HAS_SPI_FLASH                          1
+#if HAS_SPI_FLASH
   #define SPI_FLASH_SIZE                0x800000  // 8MB
   #define SPI_FLASH_CS_PIN                  PG9
   #define SPI_FLASH_MOSI_PIN                PB15

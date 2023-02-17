@@ -123,7 +123,7 @@ uint32_t getWifiTickDiff(int32_t lastTick, int32_t curTick) {
 void wifi_delay(int n) {
   const uint32_t start = getWifiTick();
   while (getWifiTickDiff(start, getWifiTick()) < (uint32_t)n)
-    hal.watchdog_refresh();
+    watchdog_refresh();
 }
 
 void wifi_reset() {
@@ -345,7 +345,7 @@ static bool longName2DosName(const char *longName, char *dosName) {
           hdma->DmaBaseAddress->IFCR = (DMA_ISR_GIF1 << hdma->ChannelIndex);
 
           SET_BIT(hdma->ErrorCode, HAL_DMA_ERROR_TE);       // Update error code
-          hdma->State = HAL_DMA_STATE_READY;                // Change the DMA state
+          hdma->State= HAL_DMA_STATE_READY;                 // Change the DMA state
           __HAL_UNLOCK(hdma);                               // Process Unlocked
           return HAL_ERROR;
         }
@@ -736,7 +736,7 @@ int32_t lastFragment = 0;
 
 char saveFilePath[50];
 
-static MediaFile upload_file, *upload_curDir;
+static SdFile upload_file, *upload_curDir;
 static filepos_t pos;
 
 int write_to_file(char *buf, int len) {
@@ -841,7 +841,6 @@ static void wifi_gcode_exec(uint8_t *cmd_line) {
   int8_t tempBuf[100] = { 0 };
   uint8_t *tmpStr = 0;
   int cmd_value;
-  volatile int print_rate;
   if (strchr((char *)cmd_line, '\n') && (strchr((char *)cmd_line, 'G') || strchr((char *)cmd_line, 'M') || strchr((char *)cmd_line, 'T'))) {
     tmpStr = (uint8_t *)strchr((char *)cmd_line, '\n');
     if (tmpStr) *tmpStr = '\0';
@@ -974,8 +973,8 @@ static void wifi_gcode_exec(uint8_t *cmd_line) {
                 if (!gcode_preview_over) {
                   char *cur_name = strrchr(list_file.file_name[sel_id], '/');
 
-                  MediaFile file;
-                  MediaFile *curDir;
+                  SdFile file;
+                  SdFile *curDir;
                   card.abortFilePrintNow();
                   const char * const fname = card.diveToFile(false, curDir, cur_name);
                   if (!fname) return;
@@ -1068,9 +1067,8 @@ static void wifi_gcode_exec(uint8_t *cmd_line) {
         case 27:
           // Report print rate
           if ((uiCfg.print_state == WORKING) || (uiCfg.print_state == PAUSED)|| (uiCfg.print_state == REPRINTING)) {
-            print_rate = uiCfg.totalSend;
             ZERO(tempBuf);
-            sprintf_P((char *)tempBuf, PSTR("M27 %d\r\n"), print_rate);
+            sprintf_P((char *)tempBuf, PSTR("M27 %ld\r\n"), uiCfg.print_progress);
             send_to_wifi((uint8_t *)tempBuf, strlen((char *)tempBuf));
           }
           break;
@@ -1169,7 +1167,7 @@ static void wifi_gcode_exec(uint8_t *cmd_line) {
           }
 
           send_to_wifi((uint8_t *)tempBuf, strlen((char *)tempBuf));
-          queue.enqueue_one(F("M105"));
+          queue.enqueue_one_P(PSTR("M105"));
           break;
 
         case 992:
@@ -1595,7 +1593,7 @@ static void file_fragment_msg_handle(uint8_t * msg, uint16_t msgLen) {
         }
       }
       upload_file.close();
-      MediaFile file, *curDir;
+      SdFile file, *curDir;
       const char * const fname = card.diveToFile(false, curDir, saveFilePath);
       if (file.open(curDir, fname, O_RDWR)) {
         gCfgItems.curFilesize = file.fileSize();
@@ -1638,7 +1636,7 @@ void esp_data_parser(char *cmdRxBuf, int len) {
 
       esp_msg_index += cpyLen;
 
-      leftLen -= cpyLen;
+      leftLen = leftLen - cpyLen;
       tail_pos = charAtArray(esp_msg_buf, esp_msg_index, ESP_PROTOC_TAIL);
 
       if (tail_pos == -1) {
@@ -1775,7 +1773,7 @@ void stopEspTransfer() {
   esp_port_begin(1);
   wifi_delay(200);
 
-  W25QXX.init(SPI_QUARTER_SPEED);
+  W25QXX.init(SPI_FULL_SPEED);
 
   TERN_(HAS_TFT_LVGL_UI_SPI, SPI_TFT.spi_init(SPI_FULL_SPEED));
   TERN_(HAS_SERVOS, servo_init());
@@ -1882,7 +1880,7 @@ void wifi_rcv_handle() {
 void wifi_looping() {
   do {
     wifi_rcv_handle();
-    hal.watchdog_refresh();
+    watchdog_refresh();
   } while (wifi_link_state == WIFI_TRANS_FILE);
 }
 
@@ -1897,7 +1895,7 @@ void mks_esp_wifi_init() {
 
   esp_state = TRANSFER_IDLE;
   esp_port_begin(1);
-  hal.watchdog_refresh();
+  watchdog_refresh();
   wifi_reset();
 
   #if 0
@@ -1950,14 +1948,14 @@ void mks_esp_wifi_init() {
 }
 
 void mks_wifi_firmware_update() {
-  hal.watchdog_refresh();
+  watchdog_refresh();
   card.openFileRead((char *)ESP_FIRMWARE_FILE);
 
   if (card.isFileOpen()) {
     card.closefile();
 
     wifi_delay(2000);
-    hal.watchdog_refresh();
+    watchdog_refresh();
     if (usartFifoAvailable((SZ_USART_FIFO *)&WifiRxFifo) < 20) return;
 
     clear_cur_ui();
@@ -1965,11 +1963,11 @@ void mks_wifi_firmware_update() {
     lv_draw_dialog(DIALOG_TYPE_UPDATE_ESP_FIRMWARE);
 
     lv_task_handler();
-    hal.watchdog_refresh();
+    watchdog_refresh();
 
     if (wifi_upload(0) >= 0) {
       card.removeFile((char *)ESP_FIRMWARE_FILE_RENAME);
-      MediaFile file, *curDir;
+      SdFile file, *curDir;
       const char * const fname = card.diveToFile(false, curDir, ESP_FIRMWARE_FILE);
       if (file.open(curDir, fname, O_READ)) {
         file.rename(curDir, (char *)ESP_FIRMWARE_FILE_RENAME);
@@ -2018,7 +2016,7 @@ void get_wifi_commands() {
                 TERN_(ARC_SUPPORT, case 2 ... 3:)
                 TERN_(BEZIER_CURVE_SUPPORT, case 5:)
                 SERIAL_ECHOLNPGM(STR_ERR_STOPPED);
-                LCD_MESSAGE(MSG_STOPPED);
+                LCD_MESSAGEPGM(MSG_STOPPED);
                 break;
             }
           }
@@ -2026,16 +2024,16 @@ void get_wifi_commands() {
 
         #if DISABLED(EMERGENCY_PARSER)
           // Process critical commands early
-          if (strcmp_P(command, PSTR("M108")) == 0) {
+          if (strcmp(command, "M108") == 0) {
             wait_for_heatup = false;
-            TERN_(HAS_MARLINUI_MENU, wait_for_user = false);
+            TERN_(HAS_LCD_MENU, wait_for_user = false);
           }
-          if (strcmp_P(command, PSTR("M112")) == 0) kill(FPSTR(M112_KILL_STR), nullptr, true);
-          if (strcmp_P(command, PSTR("M410")) == 0) quickstop_stepper();
+          if (strcmp(command, "M112") == 0) kill(M112_KILL_STR, nullptr, true);
+          if (strcmp(command, "M410") == 0) quickstop_stepper();
         #endif
 
         // Add the command to the queue
-        queue.enqueue_one(wifi_line_buffer);
+        queue.enqueue_one_P(wifi_line_buffer);
       }
       else if (wifi_read_count >= MAX_CMD_SIZE - 1) {
 

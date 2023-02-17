@@ -118,9 +118,13 @@ void TFT_FSMC::Init() {
   DMAtx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
   DMAtx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
   DMAtx.Init.Mode = DMA_NORMAL;
-  DMAtx.Init.Priority = DMA_PRIORITY_HIGH;
+  DMAtx.Init.Priority = DMA_PRIORITY_LOW;
 
   LCD = (LCD_CONTROLLER_TypeDef *)controllerAddress;
+
+  // __HAL_DMA_ENABLE_IT(&DMAtx, DMA_IT_TC);
+  // HAL_NVIC_SetPriority(DMA2_Channel1_IRQn, 0, 0);
+  // HAL_NVIC_EnableIRQ(DMA2_Channel1_IRQn);
 }
 
 uint32_t TFT_FSMC::GetID() {
@@ -147,36 +151,21 @@ uint32_t TFT_FSMC::ReadID(tft_data_t Reg) {
 }
 
 bool TFT_FSMC::isBusy() {
-  #ifdef STM32F1xx
-    #define __IS_DMA_ENABLED(__HANDLE__)      ((__HANDLE__)->Instance->CCR & DMA_CCR_EN)
-    #define __IS_DMA_CONFIGURED(__HANDLE__)   ((__HANDLE__)->Instance->CPAR != 0)
+  #if defined(STM32F1xx)
+    volatile bool dmaEnabled = (DMAtx.Instance->CCR & DMA_CCR_EN) != RESET;
   #elif defined(STM32F4xx)
-    #define __IS_DMA_ENABLED(__HANDLE__)      ((__HANDLE__)->Instance->CR & DMA_SxCR_EN)
-    #define __IS_DMA_CONFIGURED(__HANDLE__)   ((__HANDLE__)->Instance->PAR != 0)
+    volatile bool dmaEnabled = DMAtx.Instance->CR & DMA_SxCR_EN;
   #endif
-
-  if (!__IS_DMA_CONFIGURED(&DMAtx)) return false;
-
-  // Check if DMA transfer error or transfer complete flags are set
-  if ((__HAL_DMA_GET_FLAG(&DMAtx, __HAL_DMA_GET_TE_FLAG_INDEX(&DMAtx)) == 0) && (__HAL_DMA_GET_FLAG(&DMAtx, __HAL_DMA_GET_TC_FLAG_INDEX(&DMAtx)) == 0)) return true;
-
-  __DSB();
-  Abort();
-  return false;
-}
-
-void TFT_FSMC::Abort() {
-  HAL_DMA_Abort(&DMAtx);  // Abort DMA transfer if any
-  HAL_DMA_DeInit(&DMAtx); // Deconfigure DMA
+  if (dmaEnabled) {
+    if (__HAL_DMA_GET_FLAG(&DMAtx, __HAL_DMA_GET_TC_FLAG_INDEX(&DMAtx)) != 0 || __HAL_DMA_GET_FLAG(&DMAtx, __HAL_DMA_GET_TE_FLAG_INDEX(&DMAtx)) != 0)
+      Abort();
+  }
+  else
+    Abort();
+  return dmaEnabled;
 }
 
 void TFT_FSMC::TransmitDMA(uint32_t MemoryIncrease, uint16_t *Data, uint16_t Count) {
-  DMAtx.Init.PeriphInc = MemoryIncrease;
-  HAL_DMA_Init(&DMAtx);
-  HAL_DMA_Start(&DMAtx, (uint32_t)Data, (uint32_t)&(LCD->RAM), Count);
-}
-
-void TFT_FSMC::Transmit(uint32_t MemoryIncrease, uint16_t *Data, uint16_t Count) {
   DMAtx.Init.PeriphInc = MemoryIncrease;
   HAL_DMA_Init(&DMAtx);
   DataTransferBegin();
@@ -184,6 +173,26 @@ void TFT_FSMC::Transmit(uint32_t MemoryIncrease, uint16_t *Data, uint16_t Count)
   HAL_DMA_PollForTransfer(&DMAtx, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
   Abort();
 }
+
+void TFT_FSMC::TransmitDMA_TI(uint32_t MemoryIncrease, uint16_t *Data, uint16_t Count) {
+
+  // DMAtx.Init.PeriphInc = MemoryIncrease;
+
+  // HAL_DMA_Init(&DMAtx);
+
+  // HAL_NVIC_SetPriority(DMA2_Channel1_IRQn, 5, 0);
+  // HAL_NVIC_EnableIRQ(DMA2_Channel1_IRQn);
+
+  // DataTransferBegin();
+  // HAL_DMA_Start_IT(&DMAtx, (uint32_t)Data, (uint32_t)&(LCD->RAM), Count);
+}
+
+extern "C" void DMA2_Channel1_IRQHandler(void) { 
+  // HAL_DMA_IRQHandler(&(TFT_FSMC::DMAtx)); 
+}
+
+
+
 
 #endif // HAS_FSMC_TFT
 #endif // HAL_STM32

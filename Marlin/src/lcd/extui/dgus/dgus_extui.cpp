@@ -42,8 +42,8 @@ namespace ExtUI {
 
   void onIdle() { ScreenHandler.loop(); }
 
-  void onPrinterKilled(FSTR_P const error, FSTR_P const) {
-    ScreenHandler.sendinfoscreen(GET_TEXT_F(MSG_HALTED), error, FPSTR(NUL_STR), GET_TEXT_F(MSG_PLEASE_RESET), true, true, true, true);
+  void onPrinterKilled(PGM_P const error, PGM_P const component) {
+    ScreenHandler.sendinfoscreen(GET_TEXT(MSG_HALTED), error, NUL_STR, GET_TEXT(MSG_PLEASE_RESET), true, true, true, true);
     ScreenHandler.GotoScreen(DGUSLCD_SCREEN_KILL);
     while (!ScreenHandler.loop());  // Wait while anything is left to be sent
   }
@@ -60,7 +60,7 @@ namespace ExtUI {
 
   void onUserConfirmRequired(const char * const msg) {
     if (msg) {
-      ScreenHandler.sendinfoscreen(F("Please confirm."), nullptr, msg, nullptr, true, true, false, true);
+      ScreenHandler.sendinfoscreen(PSTR("Please confirm."), nullptr, msg, nullptr, true, true, false, true);
       ScreenHandler.SetupConfirmAction(setUserConfirmed);
       ScreenHandler.GotoScreen(DGUSLCD_SCREEN_POPUP);
     }
@@ -73,8 +73,8 @@ namespace ExtUI {
   void onStatusChanged(const char * const msg) { ScreenHandler.setstatusmessage(msg); }
 
   void onHomingStart() {}
-  void onHomingDone() {}
-  void onPrintDone() {}
+  void onHomingComplete() {}
+  void onPrintFinished() {}
 
   void onFactoryReset() {}
 
@@ -102,19 +102,18 @@ namespace ExtUI {
     // Called after loading or resetting stored settings
   }
 
-  void onSettingsStored(bool success) {
+  void onConfigurationStoreWritten(bool success) {
     // Called after the entire EEPROM has been written,
     // whether successful or not.
   }
 
-  void onSettingsLoaded(bool success) {
+  void onConfigurationStoreRead(bool success) {
     // Called after the entire EEPROM has been read,
     // whether successful or not.
   }
 
   #if HAS_MESH
-    void onLevelingStart() {}
-    void onLevelingDone() {}
+    void onMeshLevelingStart() {}
 
     void onMeshUpdate(const int8_t xpos, const int8_t ypos, const_float_t zval) {
       // Called when any mesh points are updated
@@ -137,19 +136,19 @@ namespace ExtUI {
       // Called for temperature PID tuning result
       switch (rst) {
         case PID_STARTED:
-          ScreenHandler.setstatusmessage(GET_TEXT_F(MSG_PID_AUTOTUNE));
+          ScreenHandler.setstatusmessagePGM(GET_TEXT(MSG_PID_AUTOTUNE));
           break;
-        case PID_BAD_HEATER_ID:
-          ScreenHandler.setstatusmessage(GET_TEXT_F(MSG_PID_BAD_HEATER_ID));
+        case PID_BAD_EXTRUDER_NUM:
+          ScreenHandler.setstatusmessagePGM(GET_TEXT(MSG_PID_BAD_EXTRUDER_NUM));
           break;
         case PID_TEMP_TOO_HIGH:
-          ScreenHandler.setstatusmessage(GET_TEXT_F(MSG_PID_TEMP_TOO_HIGH));
+          ScreenHandler.setstatusmessagePGM(GET_TEXT(MSG_PID_TEMP_TOO_HIGH));
           break;
         case PID_TUNING_TIMEOUT:
-          ScreenHandler.setstatusmessage(GET_TEXT_F(MSG_PID_TIMEOUT));
+          ScreenHandler.setstatusmessagePGM(GET_TEXT(MSG_PID_TIMEOUT));
           break;
         case PID_DONE:
-          ScreenHandler.setstatusmessage(GET_TEXT_F(MSG_PID_AUTOTUNE_DONE));
+          ScreenHandler.setstatusmessagePGM(GET_TEXT(MSG_PID_AUTOTUNE_DONE));
           break;
       }
       ScreenHandler.GotoScreen(DGUSLCD_SCREEN_MAIN);
